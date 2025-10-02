@@ -21,7 +21,6 @@
             background-attachment: fixed;
         }
 
-        /* 招财猫背景 */
         .cat-bg {
             position: fixed;
             top: 0;
@@ -35,7 +34,6 @@
             pointer-events: none;
         }
 
-        /* 彩带动画 */
         .confetti {
             position: fixed;
             top: 0;
@@ -524,7 +522,7 @@
     <div class="cat"></div>
     
     <div class="footer">
-        <p>© 2025年10月份运维在线团建活动</p>
+        <p>© 2023 命运抽一抽 | 本次活动共36人参与，奖项分配：一等奖12份、二等奖12份、安慰奖12份</p>
     </div>
 
     <script>
@@ -543,29 +541,71 @@
             let annoyanceRemaining = 12;
             let participants = [];
             
-            // 初始化界面
-            updateStatus();
-            updateParticipantsList();
+            // 从localStorage加载参与记录
+            function loadParticipants() {
+                const savedParticipants = localStorage.getItem('participants');
+                if (savedParticipants) {
+                    participants = JSON.parse(savedParticipants);
+                }
+            }
             
-            // 开始按钮事件
-            startBtn.addEventListener('click', function() {
-                const name = nameInput.value.trim();
+            // 保存参与记录到localStorage
+            function saveParticipants() {
+                localStorage.setItem('participants', JSON.stringify(participants));
+            }
+            
+            // 更新状态显示
+            function updateStatus() {
+                firstCount.textContent = firstRemaining;
+                secondCount.textContent = secondRemaining;
+                annoyanceCount.textContent = annoyanceRemaining;
                 
-                if (!name) {
-                    alert('请输入您的名字');
+                // 如果所有奖项都已发完
+                if (firstRemaining === 0 && secondRemaining === 0 && annoyanceRemaining === 0) {
+                    document.getElementById('status').innerHTML += `
+                        <div style="margin-top: 25px; color: #2ecc71; font-weight: bold; font-size: 1.3rem;">
+                            <i class="fas fa-check-circle"></i> 恭喜！所有奖项已全部发放完毕！
+                        </div>
+                    `;
+                }
+            }
+            
+            // 更新参与记录
+            function updateParticipantsList() {
+                participantList.innerHTML = '';
+                
+                if (participants.length === 0) {
+                    participantList.innerHTML = `
+                        <div class="participant">
+                            <div class="participant-name">等待参与...</div>
+                            <div class="participant-reward reward-annoyance">等待中</div>
+                        </div>
+                    `;
                     return;
                 }
                 
-                // 隐藏输入框和开始按钮
-                nameInput.style.display = 'none';
-                startBtn.style.display = 'none';
-                
-                // 生成刮刮乐卡片
-                generateScratchCards();
-                
-                // 显示状态
-                document.getElementById('status').style.display = 'block';
-            });
+                participants.forEach((participant, index) => {
+                    const participantDiv = document.createElement('div');
+                    participantDiv.className = 'participant';
+                    participantDiv.innerHTML = `
+                        <div class="participant-name">${participant.name}</div>
+                        <div class="participant-reward reward-${participant.reward}">
+                            ${getRewardText(participant.reward)}
+                        </div>
+                    `;
+                    participantList.appendChild(participantDiv);
+                });
+            }
+            
+            // 获取奖励文本
+            function getRewardText(rewardType) {
+                switch(rewardType) {
+                    case 'first': return '一等奖';
+                    case 'second': return '二等奖';
+                    case 'annoyance': return '安慰奖';
+                    default: return '';
+                }
+            }
             
             // 生成刮刮乐卡片
             function generateScratchCards() {
@@ -577,10 +617,31 @@
                     const card = document.createElement('div');
                     card.className = 'scratch-card';
                     card.textContent = i;
+                    card.dataset.index = i;
+                    cards.push(card);
+                }
+                
+                // 随机排列卡片
+                for (let i = cards.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [cards[i], cards[j]] = [cards[j], cards[i]];
+                }
+                
+                // 添加到页面
+                cards.forEach(card => scratchArea.appendChild(card));
+                
+                // 为每张卡片添加点击事件
+                cards.forEach(card => {
                     card.addEventListener('click', function() {
                         if (this.classList.contains('scratched')) return;
                         
-                        this.classList.add('scratched');
+                        // 禁用所有卡片
+                        cards.forEach(c => {
+                            if (c !== this) {
+                                c.style.pointerEvents = 'none';
+                                c.style.opacity = '0.6';
+                            }
+                        });
                         
                         // 分配奖励
                         const reward = assignReward();
@@ -593,6 +654,7 @@
                         this.appendChild(rewardElement);
                         
                         // 添加到参与记录
+                        const name = nameInput.value.trim();
                         participants.push({ name, reward });
                         
                         // 更新状态
@@ -610,18 +672,18 @@
                                 </div>
                             `;
                         }, 1500);
+                        
+                        // 显示重新开始按钮
+                        setTimeout(() => {
+                            document.getElementById('startBtn').textContent = '重新开始';
+                            document.getElementById('startBtn').style.display = 'block';
+                            document.getElementById('startBtn').style.backgroundColor = 'linear-gradient(to right, #3498db, #2c3e50)';
+                            document.getElementById('startBtn').style.cursor = 'pointer';
+                            document.getElementById('startBtn').style.transform = 'none';
+                            document.getElementById('startBtn').style.boxShadow = '0 4px 15px rgba(52, 152, 219, 0.4)';
+                        }, 1500);
                     });
-                    cards.push(card);
                 }
-                
-                // 随机排列卡片
-                for (let i = cards.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [cards[i], cards[j]] = [cards[j], cards[i]];
-                }
-                
-                // 添加到页面
-                cards.forEach(card => scratchArea.appendChild(card));
             }
             
             // 分配奖励（在剩余数量范围内随机）
@@ -688,59 +750,6 @@
                 }
             }
             
-            // 获取奖励文本
-            function getRewardText(rewardType) {
-                switch(rewardType) {
-                    case 'first': return '一等奖';
-                    case 'second': return '二等奖';
-                    case 'annoyance': return '安慰奖';
-                    default: return '';
-                }
-            }
-            
-            // 更新状态显示
-            function updateStatus() {
-                firstCount.textContent = firstRemaining;
-                secondCount.textContent = secondRemaining;
-                annoyanceCount.textContent = annoyanceRemaining;
-                
-                // 如果所有奖项都已发完
-                if (firstRemaining === 0 && secondRemaining === 0 && annoyanceRemaining === 0) {
-                    document.getElementById('status').innerHTML += `
-                        <div style="margin-top: 25px; color: #2ecc71; font-weight: bold; font-size: 1.3rem;">
-                            <i class="fas fa-check-circle"></i> 恭喜！所有奖项已全部发放完毕！
-                        </div>
-                    `;
-                }
-            }
-            
-            // 更新参与记录
-            function updateParticipantsList() {
-                participantList.innerHTML = '';
-                
-                if (participants.length === 0) {
-                    participantList.innerHTML = `
-                        <div class="participant">
-                            <div class="participant-name">等待参与...</div>
-                            <div class="participant-reward reward-annoyance">等待中</div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                participants.forEach((participant, index) => {
-                    const participantDiv = document.createElement('div');
-                    participantDiv.className = 'participant';
-                    participantDiv.innerHTML = `
-                        <div class="participant-name">${participant.name}</div>
-                        <div class="participant-reward reward-${participant.reward}">
-                            ${getRewardText(participant.reward)}
-                        </div>
-                    `;
-                    participantList.appendChild(participantDiv);
-                });
-            }
-            
             // 创建彩带效果
             function createConfetti() {
                 const confetti = document.getElementById('confetti');
@@ -782,8 +791,76 @@
                 }
             `;
             document.head.appendChild(style);
+            
+            // 初始化
+            loadParticipants();
+            updateParticipantsList();
+            
+            // 开始按钮事件
+            startBtn.addEventListener('click', function() {
+                const name = nameInput.value.trim();
+                
+                if (!name) {
+                    alert('请输入您的名字');
+                    return;
+                }
+                
+                // 隐藏输入框和开始按钮
+                nameInput.style.display = 'none';
+                startBtn.style.display = 'none';
+                
+                // 生成刮刮乐
+                generateScratchCards();
+                
+                // 显示状态
+                document.getElementById('status').style.display = 'block';
+            });
+            
+            // 重新开始按钮
+            document.getElementById('startBtn').addEventListener('click', function() {
+                if (this.textContent === '重新开始') {
+                    // 重置活动状态
+                    firstRemaining = 12;
+                    secondRemaining = 12;
+                    annoyanceRemaining = 12;
+                    participants = [];
+                    
+                    // 重置页面
+                    scratchArea.innerHTML = '';
+                    nameInput.style.display = 'block';
+                    startBtn.style.display = 'block';
+                    startBtn.textContent = '开始抽一抽';
+                    document.getElementById('status').style.display = 'block';
+                    document.getElementById('status').innerHTML = `
+                        <h2><i class="fas fa-trophy"></i> 奖项状态</h2>
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <div class="status-label">一等奖</div>
+                                <div class="status-value" id="firstCount">12</div>
+                                <div class="status-label">剩余</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-label">二等奖</div>
+                                <div class="status-value" id="secondCount">12</div>
+                                <div class="status-label">剩余</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-label">安慰奖</div>
+                                <div class="status-value" id="annoyanceCount">12</div>
+                                <div class="status-label">剩余</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 更新显示
+                    updateStatus();
+                    updateParticipantsList();
+                    
+                    // 保存到localStorage
+                    saveParticipants();
+                }
+            });
         });
     </script>
 </body>
-
 </html>
